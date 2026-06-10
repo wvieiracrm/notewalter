@@ -1,11 +1,19 @@
 # CLAUDE.md
 
+## Projeto
+
+**Note Walter** é um fork do Excalidraw, mantido por Walter Vieira, usado como whiteboard interativo para ministrar aulas de CRM, automação de vendas e IA no YouTube.
+
+- **Repositório**: `github.com/wvieiracrm/notewalter`
+- **Deploy**: Vercel (auto-deploy em push para `master`)
+- **Upstream**: `github.com/excalidraw/excalidraw`
+
 ## Project Structure
 
-Excalidraw is a **monorepo** with a clear separation between the core library and the application:
+Note Walter é um **monorepo** (fork do Excalidraw) com separação entre biblioteca core e aplicação:
 
 - **`packages/excalidraw/`** - Main React component library published to npm as `@excalidraw/excalidraw`
-- **`excalidraw-app/`** - Full-featured web application (excalidraw.com) that uses the library
+- **`excalidraw-app/`** - Full-featured web application (ponto de entrada da app)
 - **`packages/`** - Core packages: `@excalidraw/common`, `@excalidraw/element`, `@excalidraw/math`, `@excalidraw/utils`
 - **`examples/`** - Integration examples (NextJS, browser script)
 
