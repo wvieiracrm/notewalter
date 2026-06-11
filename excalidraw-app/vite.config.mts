@@ -149,6 +149,12 @@ export default defineConfig(({ mode }) => {
       ViteEjsPlugin(),
       VitePWA({
         registerType: "autoUpdate",
+        // Note Walter: o app é protegido por um gate de MFA no Edge da Vercel.
+        // Um Service Worker que faz cache offline do app furaria esse gate
+        // (carregaria a lousa do cache sem passar pelo middleware). Por isso o
+        // PWA fica desativado por padrão; `selfDestroying` ainda gera um SW que
+        // DESREGISTRA service workers já instalados e limpa os caches antigos.
+        selfDestroying: envVars.VITE_APP_ENABLE_PWA !== "true",
         devOptions: {
           /* set this flag to true to enable in Development mode */
           enabled: envVars.VITE_APP_ENABLE_PWA === "true",

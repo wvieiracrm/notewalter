@@ -40,3 +40,26 @@ yarn fix             # Auto-fix formatting and linting issues
 - Internal packages use path aliases (see `vitest.config.mts`)
 - Build system uses esbuild for packages, Vite for the app
 - TypeScript throughout with strict configuration
+
+## Controle de acesso (MFA / TOTP)
+
+A lousa em `https://lousa.tudocrm.com.br/` é privada, protegida por um gate de MFA
+no Edge da Vercel (sem login/senha — apenas código TOTP do Google Authenticator).
+
+- **`middleware.ts`** (Edge): valida o cookie de sessão (`nw_session`, JWT via `jose`)
+  e renova por mais 30 dias a cada acesso (sliding). Sem cookie válido, devolve o HTML
+  do gate com campo de código.
+- **`api/auth.ts`** (função Node): valida o código TOTP (`otplib`) ou um código de
+  backup e seta o cookie `HttpOnly`/`Secure` por 30 dias.
+- **`scripts/totp-setup.mjs`**: rodar UMA vez localmente para gerar segredo + QR Code
+  do Google Authenticator e os códigos de backup. `node scripts/totp-setup.mjs`.
+- O **PWA fica desativado** (`selfDestroying` em `vite.config.mts`) para o Service
+  Worker não furar o gate via cache offline.
+
+### Variáveis de ambiente (definir no painel da Vercel — Production, nunca commitar)
+
+| Variável | Conteúdo |
+|---|---|
+| `TOTP_SECRET` | segredo base32 do Google Authenticator (gerado pelo script) |
+| `SESSION_SECRET` | chave aleatória forte (≥ 32 bytes) que assina o JWT do cookie |
+| `BACKUP_CODES` | hashes SHA-256 dos códigos de backup, separados por vírgula |
