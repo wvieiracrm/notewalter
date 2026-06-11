@@ -14,7 +14,6 @@
  */
 import crypto from "node:crypto";
 
-import { authenticator } from "otplib";
 import qrcode from "qrcode-terminal";
 
 const ISSUER = "Note Walter";
@@ -24,9 +23,32 @@ const BACKUP_CODE_COUNT = 8;
 const sha256 = (value) =>
   crypto.createHash("sha256").update(value, "utf8").digest("hex");
 
-// 1) Segredo TOTP (compartilhado com o Google Authenticator)
-const totpSecret = authenticator.generateSecret();
-const otpauthUri = authenticator.keyuri(ACCOUNT, ISSUER, totpSecret);
+/** Codifica bytes em base32 (RFC 4648, sem padding) — formato do Google Authenticator. */
+const base32Encode = (bytes) => {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let bits = 0;
+  let value = 0;
+  let out = "";
+  for (const byte of bytes) {
+    value = (value << 8) | byte;
+    bits += 8;
+    while (bits >= 5) {
+      out += alphabet[(value >>> (bits - 5)) & 31];
+      bits -= 5;
+    }
+  }
+  if (bits > 0) {
+    out += alphabet[(value << (5 - bits)) & 31];
+  }
+  return out;
+};
+
+// 1) Segredo TOTP (compartilhado com o Google Authenticator) — 20 bytes (SHA1/6/30).
+const totpSecret = base32Encode(crypto.randomBytes(20));
+const otpauthUri =
+  `otpauth://totp/${encodeURIComponent(`${ISSUER}:${ACCOUNT}`)}` +
+  `?secret=${totpSecret}&issuer=${encodeURIComponent(ISSUER)}` +
+  `&algorithm=SHA1&digits=6&period=30`;
 
 // 2) Segredo de sessão (assinatura do JWT do cookie)
 const sessionSecret = crypto.randomBytes(48).toString("base64url");
