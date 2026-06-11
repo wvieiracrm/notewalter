@@ -3,7 +3,19 @@ import crypto from "node:crypto";
 import { SignJWT } from "jose";
 import { authenticator } from "otplib";
 
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+// Tipos mínimos do handler da Vercel (Node runtime). Não dependemos do pacote
+// `@vercel/node` em package.json — ele puxa node-gyp/nopt, que exige Node >=20.5
+// e quebra o `yarn install` do build. A Vercel injeta o próprio builder em runtime.
+interface VercelRequest {
+  method?: string;
+  headers: Record<string, string | string[] | undefined>;
+  body: unknown;
+}
+interface VercelResponse {
+  status(code: number): VercelResponse;
+  json(body: unknown): VercelResponse;
+  setHeader(name: string, value: string): void;
+}
 
 const COOKIE_NAME = "nw_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 dias (em segundos)
@@ -77,8 +89,10 @@ export default async function handler(
     return res.status(429).json({ error: "too_many_attempts" });
   }
 
-  const body =
-    typeof req.body === "string" ? safeParse(req.body) : req.body ?? {};
+  const body: Record<string, unknown> =
+    typeof req.body === "string"
+      ? safeParse(req.body)
+      : (req.body as Record<string, unknown>) ?? {};
   const code = String(body.code ?? "").replace(/\s+/g, "");
   if (!/^\d{6,10}$/.test(code)) {
     return res.status(400).json({ error: "invalid_code_format" });
