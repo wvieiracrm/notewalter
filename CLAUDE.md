@@ -56,6 +56,15 @@ no Edge da Vercel (sem login/senha — apenas código TOTP do Google Authenticat
 - O **PWA fica desativado** (`selfDestroying` em `vite.config.mts`) para o Service
   Worker não furar o gate via cache offline.
 
+> **Funções serverless na Vercel:** a pasta `api/` tem um `package.json` com
+> `{"type":"module"}`. É obrigatório: a Vercel compila `api/*.ts` usando o
+> `tsconfig.json` da raiz (`module: ESNext`), gerando `.js` com `import` (ESM);
+> sem `type:module` o runtime executa como CommonJS e dá
+> `FUNCTION_INVOCATION_FAILED` ("Cannot use import statement outside a module").
+> O `engines.node` da raiz está fixado em `22.x` (Node 18 está fora do runtime
+> de funções). Para saber qual commit está no ar: `GET /version.json` (mas é
+> interceptado pelo gate; use o painel da Vercel se estiver autenticado).
+
 ### Variáveis de ambiente (definir no painel da Vercel — Production, nunca commitar)
 
 | Variável | Conteúdo |
