@@ -6,9 +6,9 @@ const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 dias (segundos)
 // Renova o cookie (sliding) quando faltar menos de 29 dias para expirar.
 const RENEW_THRESHOLD = 60 * 60 * 24 * 29;
 
-// Roda em todas as rotas, exceto o endpoint que valida o código.
+// Roda em todas as rotas, exceto as rotas de API (que cuidam do próprio acesso).
 export const config = {
-  matcher: ["/((?!api/auth).*)"],
+  matcher: ["/((?!api/).*)"],
 };
 
 const encoder = new TextEncoder();

@@ -1,6 +1,8 @@
 import crypto from "node:crypto";
 
-import { SignJWT } from "jose";
+// Função sem NENHUMA dependência externa (só node:crypto) para ser à prova de
+// problemas de bundling do builder serverless da Vercel. O JWT HS256 é gerado à
+// mão; o middleware (Edge) verifica com `jose`, que é compatível com o formato.
 
 // Tipos mínimos do handler da Vercel (Node runtime). Não dependemos do pacote
 // `@vercel/node` em package.json — ele puxa node-gyp/nopt, que exige Node >=20.5
@@ -116,6 +118,27 @@ const matchesBackupCode = (code: string): boolean => {
   return matched;
 };
 
+/** Gera um JWT HS256 padrão (verificável pelo `jose` no middleware). */
+const signJwtHS256 = (
+  claims: Record<string, unknown>,
+  secret: string,
+  maxAgeSeconds: number,
+): string => {
+  const now = Math.floor(Date.now() / 1000);
+  const header = Buffer.from(
+    JSON.stringify({ alg: "HS256", typ: "JWT" }),
+  ).toString("base64url");
+  const payload = Buffer.from(
+    JSON.stringify({ ...claims, iat: now, exp: now + maxAgeSeconds }),
+  ).toString("base64url");
+  const data = `${header}.${payload}`;
+  const signature = crypto
+    .createHmac("sha256", secret)
+    .update(data)
+    .digest("base64url");
+  return `${data}.${signature}`;
+};
+
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse,
@@ -156,11 +179,11 @@ export default async function handler(
       return res.status(401).json({ error: "invalid_code" });
     }
 
-    const token = await new SignJWT({ via: validTotp ? "totp" : "backup" })
-      .setProtectedHeader({ alg: "HS256" })
-      .setIssuedAt()
-      .setExpirationTime(`${SESSION_MAX_AGE}s`)
-      .sign(new TextEncoder().encode(sessionSecret));
+    const token = signJwtHS256(
+      { via: validTotp ? "totp" : "backup" },
+      sessionSecret,
+      SESSION_MAX_AGE,
+    );
 
     res.setHeader(
       "Set-Cookie",
